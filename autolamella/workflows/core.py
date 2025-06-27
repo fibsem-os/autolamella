@@ -19,6 +19,7 @@ from fibsem.detection.detection import (
 )
 from fibsem.microscope import FibsemMicroscope
 from fibsem.milling import get_milling_stages, get_protocol_from_stages, FibsemMillingStage
+from fibsem.milling.patterning.utils import get_pattern_reduced_area
 from fibsem.structures import (
     BeamType,
     FibsemImage,
@@ -26,7 +27,6 @@ from fibsem.structures import (
     FibsemStagePosition,
     ImageSettings,
     Point,
-    calculate_fiducial_area_v2,
 )
 from autolamella.structures import AutoLamellaProtocol
 
@@ -597,24 +597,18 @@ def setup_lamella(
         n_fiducial = len(fiducial_stage)
         fiducial_stage = deepcopy(stages[-n_fiducial:])
 
-        # save fiducial information
-        fiducial_stage = fiducial_stage[0] # always single stage
-        lamella.protocol[FIDUCIAL_KEY] = deepcopy(get_protocol_from_stages(fiducial_stage))
-        lamella.alignment_area, _  = calculate_fiducial_area_v2(ib_image, 
-            deepcopy(fiducial_stage.pattern.point), 
-            fiducial_stage.pattern.height)
-        alignment_hfw = fiducial_stage.milling.hfw
+
 
         # mill the fiducial
-        fiducial_stage = get_milling_stages(FIDUCIAL_KEY, lamella.protocol)
         stages = update_milling_ui(microscope, fiducial_stage, parent_ui, 
             msg=f"Press Run Milling to mill the fiducial for {lamella.name}. Press Continue when done.", 
             validate=validate)
         lamella.protocol[FIDUCIAL_KEY] = deepcopy(get_protocol_from_stages(stages))
-        lamella.alignment_area, _  = calculate_fiducial_area_v2(ib_image, 
-            deepcopy(stages[0].pattern.point), 
-            stages[0].pattern.height)
         alignment_hfw = stages[0].milling.hfw
+
+        # New alignment area
+        lamella.alignment_area = get_pattern_reduced_area(stage=stages[0], image=ib_image, expand_percent=20)
+
     else:
         # non-fiducial based alignment
         lamella.alignment_area = FibsemRectangle.from_dict(DEFAULT_ALIGNMENT_AREA)
