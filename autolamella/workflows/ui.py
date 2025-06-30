@@ -28,11 +28,11 @@ def _check_for_abort(parent_ui: AutoLamellaUI, msg: str = "Workflow aborted by u
         raise InterruptedError(msg)
     return False
 
-def update_milling_ui(microscope: FibsemMicroscope, 
-                      stages: List[FibsemMillingStage], 
-                      parent_ui: AutoLamellaUI, 
-                      msg:str, 
-                      validate: bool, 
+def update_milling_ui(microscope: FibsemMicroscope,
+                      stages: List[FibsemMillingStage],
+                      parent_ui: AutoLamellaUI,
+                      msg: str,
+                      validate: bool,
                       milling_enabled: bool = True) -> List[FibsemMillingStage]:
 
     # headless mode
@@ -119,7 +119,8 @@ def update_detection_ui(
     image_settings: ImageSettings, # TODO: deprecate
     checkpoint: str,
     features: List[Feature], 
-    parent_ui: AutoLamellaUI, validate: bool, 
+    parent_ui: Optional[AutoLamellaUI] = None, 
+    validate: bool = True, 
     msg: str = "Lamella", position: Optional[FibsemStagePosition] = None,
 ) -> DetectedFeatures:
     feat_str = ", ".join([f.name for f in features])
@@ -157,8 +158,8 @@ def update_detection_ui(
 
 def set_images_ui(
     parent_ui: AutoLamellaUI,
-    eb_image: FibsemImage = None,
-    ib_image: FibsemImage = None,
+    eb_image: Optional[FibsemImage] = None,
+    ib_image: Optional[FibsemImage] = None,
 ):
     # headless mode
     if parent_ui is None:
@@ -185,7 +186,7 @@ def set_images_ui(
     while parent_ui.WAITING_FOR_UI_UPDATE:
         time.sleep(0.5)
 
-def update_status_ui(parent_ui: AutoLamellaUI, msg: str, workflow_info: str = None) -> None:
+def update_status_ui(parent_ui: AutoLamellaUI, msg: str, workflow_info: Optional[str] = None) -> None:
 
     if parent_ui is None:
         logging.info(msg)

@@ -67,7 +67,7 @@ from autolamella.structures import (
     create_new_lamella,
     get_autolamella_method,
 )
-from autolamella.ui import AutoLamellaMainUI
+from autolamella.ui.qt import AutoLamellaUI as AutoLamellaMainUI
 from autolamella.ui.AutoLamellaWorkflowDialog import (
     display_lamella_info,
     display_selected_lamella_info,
@@ -124,6 +124,8 @@ INSTRUCTIONS = {
 def _find_matching_position(position: FibsemStagePosition, experiment: Experiment) -> int:
     """Find the matching position in the experiment."""
     lamella_names = [lamella.name for lamella in experiment.positions]
+    if position.name not in lamella_names:
+        raise ValueError(f"Position {position.name} not found in experiment positions.")
     idx = lamella_names.index(position.name)
     return idx
 
@@ -158,22 +160,22 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
         self.is_protocol_loaded: bool = False
         self.UPDATING_PROTOCOL_UI: bool = False
 
-        self.experiment: Experiment = None
+        self.experiment: Optional[Experiment] = None
         self.worker = None
-        self.microscope: FibsemMicroscope = None
-        self.settings: MicroscopeSettings = None
-        self.protocol: AutoLamellaProtocol = None
+        self.microscope: Optional[FibsemMicroscope] = None
+        self.settings: Optional[MicroscopeSettings] = None
+        self.protocol: Optional[AutoLamellaProtocol] = None
 
         self.system_widget = FibsemSystemSetupWidget(parent=self)
         self.tabWidget.insertTab(
             CONFIGURATION["TABS"]["Connection"], self.system_widget, "Connection"
         )
 
-        self.image_widget: FibsemImageSettingsWidget = None
-        self.movement_widget: FibsemMovementWidget = None
-        self.milling_widget: FibsemMillingWidget = None
-        self.minimap_widget: FibsemMinimapWidget = None
-        self.spot_burn_widget: FibsemSpotBurnWidget = None
+        self.image_widget: Optional[FibsemImageSettingsWidget] = None
+        self.movement_widget: Optional[FibsemMovementWidget] = None
+        self.milling_widget: Optional[FibsemMillingWidget] = None
+        self.minimap_widget: Optional[FibsemMinimapWidget] = None
+        self.spot_burn_widget: Optional[FibsemSpotBurnWidget] = None
 
         self.WAITING_FOR_USER_INTERACTION: bool = False
         self.USER_RESPONSE: bool = False
@@ -478,13 +480,15 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
 
     def change_protocol_method(self):
         """Change the protocol method and refresh the UI."""
+        if self.protocol is None or self.experiment is None:
+            return
         method = get_autolamella_method(self.comboBox_method.currentText())
         self.protocol.method = method
         self.experiment.method = method
         self.update_protocol_ui()
 
     def update_protocol_ui(self):
-        if not self.is_protocol_loaded or self.UPDATING_PROTOCOL_UI:
+        if not self.is_protocol_loaded or self.UPDATING_PROTOCOL_UI or self.protocol is None:
             return
 
         self.UPDATING_PROTOCOL_UI = True
@@ -593,6 +597,9 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
         self.UPDATING_PROTOCOL_UI = False
 
     def export_protocol_ui(self):
+        
+        if self.protocol is None:
+            return         
         if not self.is_protocol_loaded:
             return
         
@@ -1308,6 +1315,9 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
 
         if self.WORKFLOW_IS_RUNNING:
             return
+        
+        if self.milling_widget is None:
+            return
 
         idx = self.comboBox_current_lamella.currentIndex()
         if idx == -1:
@@ -1586,6 +1596,13 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
         Returns:
             lamella: The created lamella.
         """
+        if self.experiment is None:
+            raise ValueError("No experiment loaded. Please load an experiment first.")
+        if self.protocol is None:
+            raise ValueError("No protocol loaded. Please load a protocol first.")
+        if self.microscope is None:
+            raise ValueError("No microscope connected. Please connect a microscope first.")
+
         # get microscope state
         microscope_state = self.microscope.get_microscope_state()  
         if stage_position is not None: 

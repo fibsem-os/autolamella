@@ -3,7 +3,7 @@ import os
 import time
 from copy import deepcopy
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any, Union
 
 import numpy as np
 from fibsem import acquire, alignment, calibration
@@ -70,7 +70,7 @@ MAX_ALIGNMENT_ATTEMPTS = 3
 # feature flags
 
 
-def get_supervision(lamella: Lamella, protocol: AutoLamellaProtocol, parent_ui: AutoLamellaUI = None) -> bool:
+def get_supervision(lamella: Lamella, protocol: AutoLamellaProtocol, parent_ui: Optional['AutoLamellaUI'] = None) -> bool:
     """Get the supervision setting for the current workflow stage. 
     Attempt to get it from the parent_ui if available (thread-safe)"""
 
@@ -96,7 +96,7 @@ def pass_through_stage(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
     # pass through stage
     return lamella 
@@ -106,7 +106,7 @@ def mill_trench(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
 
     validate = get_supervision(lamella, protocol, parent_ui)
@@ -164,7 +164,7 @@ def mill_trench(
     reference_images = acquire.take_set_of_reference_images(
         microscope=microscope,
         image_settings=image_settings,
-        hfws=[fcfg.REFERENCE_HFW_MEDIUM, fcfg.REFERENCE_HFW_HIGH],
+        hfws=(fcfg.REFERENCE_HFW_MEDIUM, fcfg.REFERENCE_HFW_HIGH),
         filename=f"ref_{lamella.status}_final",
     )
     set_images_ui(parent_ui, reference_images.high_res_eb, reference_images.high_res_ib)
@@ -176,7 +176,7 @@ def mill_undercut(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
 
     method = protocol.method
@@ -240,7 +240,7 @@ def mill_undercut(
         set_images_ui(parent_ui, eb_image, ib_image)
 
         # get pattern
-        scan_rotation = microscope.get("scan_rotation", beam_type=BeamType.ION)
+        scan_rotation = microscope.get_scan_rotation(beam_type=BeamType.ION)
         features = [LamellaTopEdge() if np.isclose(scan_rotation, 0) else LamellaBottomEdge()]
 
         det = update_detection_ui(microscope=microscope, 
@@ -318,7 +318,7 @@ def mill_undercut(
     reference_images = acquire.take_set_of_reference_images(
         microscope=microscope,
         image_settings=image_settings,
-        hfws=[fcfg.REFERENCE_HFW_MEDIUM, fcfg.REFERENCE_HFW_HIGH],
+        hfws=(fcfg.REFERENCE_HFW_MEDIUM, fcfg.REFERENCE_HFW_HIGH),
         filename=f"ref_{lamella.status}_final",
     )
     set_images_ui(parent_ui, reference_images.high_res_eb, reference_images.high_res_ib)
@@ -329,7 +329,7 @@ def mill_lamella(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
 
     image_settings = protocol.configuration.image
@@ -445,7 +445,7 @@ def mill_lamella(
         reference_images = acquire.take_set_of_reference_images(
             microscope=microscope,
             image_settings=image_settings,
-            hfws=[fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER],
+            hfws=(fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER),
             filename=f"ref_{lamella.status}_final",
         )
         set_images_ui(parent_ui, reference_images.high_res_eb, reference_images.high_res_ib)
@@ -480,7 +480,7 @@ def setup_lamella(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
 
     method = protocol.method
@@ -644,7 +644,7 @@ def setup_lamella(
     reference_images = acquire.take_set_of_reference_images(
         microscope,
         image_settings,
-        hfws=[fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER],
+        hfws=(fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER),
         filename=f"ref_{lamella.status}_final",
     )
     set_images_ui(parent_ui, reference_images.high_res_eb, reference_images.high_res_ib)
@@ -655,7 +655,7 @@ def setup_polishing(
     microscope: FibsemMicroscope,
     protocol: AutoLamellaProtocol,
     lamella: Lamella,
-    parent_ui: AutoLamellaUI = None,
+    parent_ui: Optional[AutoLamellaUI] = None,
 ) -> Lamella:
 
     method = protocol.method
@@ -698,7 +698,7 @@ def setup_polishing(
     reference_images = acquire.take_set_of_reference_images(
         microscope,
         image_settings,
-        hfws=[fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER],
+        hfws=(fcfg.REFERENCE_HFW_HIGH, fcfg.REFERENCE_HFW_SUPER),
         filename=f"ref_{lamella.status}_final",
     )
     set_images_ui(parent_ui, reference_images.high_res_eb, reference_images.high_res_ib)
@@ -839,7 +839,7 @@ def align_feature_beam_shift(microscope: FibsemMicroscope,
                             beam_type: BeamType = BeamType.ELECTRON,
                             hfw: float = fcfg.REFERENCE_HFW_MEDIUM,
                             feature: Feature = LamellaCentre(), 
-                            checkpoint: str = None) -> Lamella:
+                            checkpoint: Optional[str] = None) -> Lamella:
     """Align the feature to the centre of the image using the beamshift."""
 
     # bookkeeping
