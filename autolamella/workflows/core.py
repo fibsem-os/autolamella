@@ -632,7 +632,7 @@ def setup_lamella(
     image_settings.hfw =  alignment_hfw
     image_settings.filename = "ref_alignment"
     image_settings.autocontrast = False # disable autocontrast for alignment
-    ib_image = acquire.new_image(microscope, image_settings)
+    ib_image = acquire.acquire_image(microscope, image_settings)
     image_settings.reduced_area = None
     image_settings.autocontrast = True
 
