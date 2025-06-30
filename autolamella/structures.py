@@ -3,11 +3,11 @@ import os
 import uuid
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 import pandas as pd
 import petname
@@ -39,6 +39,10 @@ from autolamella.protocol.validation import (
     TRENCH_KEY,
     UNDERCUT_KEY,
 )
+
+if TYPE_CHECKING:
+    from autolamella.workflows.tasks import AutoLamellaTaskConfig
+
 
 
 class AutoLamellaStage(Enum):
@@ -118,6 +122,7 @@ class LamellaState:
             end_timestamp=data["end_timestamp"]
         )
 
+
 @dataclass
 class Lamella:
     path: Path
@@ -135,6 +140,7 @@ class Lamella:
     milling_workflows: Dict[str, List[FibsemMillingStage]] = None
     states: Dict[AutoLamellaStage, LamellaState] = None
     _id: str = str(uuid.uuid4())
+    tasks: Dict[str, 'AutoLamellaTaskConfig'] = field(default_factory=dict)
 
     def __post_init__(self):
         # only make the dir, if the base path is actually set, 
@@ -308,6 +314,12 @@ class Lamella:
         prev = method.get_previous(stage)
         if prev in self.states:
             self.state = self.states[prev]
+
+    def get_task_config(self, task_name: str) -> Optional['AutoLamellaTaskConfig']:
+        """Get the configuration for a specific task by name."""
+        if task_name not in self.tasks:
+            return None
+        return self.tasks[task_name]
 
 
 def create_new_lamella(experiment_path: str, number: int, state: LamellaState, protocol: Dict) -> Lamella:
