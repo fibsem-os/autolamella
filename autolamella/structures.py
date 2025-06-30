@@ -653,6 +653,18 @@ class Experiment:
             total_remaining_time += remaining_time
         return total_remaining_time
 
+    def add_lamella(self, lamella: Lamella) -> None:
+        """Add a lamella to the experiment."""
+        if not isinstance(lamella, Lamella):
+            raise TypeError("lamella must be an instance of Lamella")
+
+        # check if lamella already exists
+        if lamella in self.positions:
+            raise ValueError(f"Lamella {lamella.name} already exists in the experiment.")
+
+        self.positions.append(deepcopy(lamella))
+        logging.info(f"Added lamella {lamella.name} to experiment {self.name}")
+
 ########## PROTOCOL V2 ##########
 
 @dataclass
@@ -869,7 +881,7 @@ def get_remaining_stages(pos: Lamella, method: AutoLamellaMethod) -> List[AutoLa
 
     return remaining_states
 
-def estimate_remaining_time(p:Lamella, method: AutoLamellaMethod) -> None:
+def estimate_remaining_time(p:Lamella, method: AutoLamellaMethod) -> float:
     """Estimate the remaiing time in the workflows for a given method"""
     ESTIMATED_SETUP_TIME = 5*60
     OVERHEAD_TIME = 2*60
