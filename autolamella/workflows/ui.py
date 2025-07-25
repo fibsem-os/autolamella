@@ -61,6 +61,7 @@ def update_milling_ui(microscope: FibsemMicroscope,
 
         logging.info("WAITING FOR MILLING TO FINISH... ")
         while parent_ui.is_milling or parent_ui.image_widget.is_acquiring:
+            _check_for_abort(parent_ui=parent_ui)
             time.sleep(1)
 
         update_status_ui(
@@ -75,27 +76,7 @@ def update_milling_ui(microscope: FibsemMicroscope,
 
     update_milling_stages_ui(parent_ui, stages="clear")
 
-
-    # if validate:
-    #     response = ask_user(parent_ui, msg=msg, pos="Continue", mill=milling_enabled)
-    #     stages = deepcopy(parent_ui.milling_widget.get_milling_stages())
-    # else:
-    #     update_status_ui(parent_ui, f"Milling {len(stages)} stages...") # TODO: better feedback here, change to milling tab for progress bar
-    #     parent_ui.is_milling = True
-    #     parent_ui.run_milling_signal.emit()
-        
-    #     logging.info(f"WAITING FOR MILLING TO FINISH... ")
-    #     while parent_ui.is_milling or parent_ui.image_widget.is_acquiring:
-    #         time.sleep(1)
-        
-    #     update_status_ui(
-    #         parent_ui, f"Milling Complete: {len(stages)} stages completed."
-    #     )
-
-    # update_milling_stages_ui(parent_ui, stages="clear")
-
     return stages
-
 
 # TODO: think this can be consolidated into mill arg for ask_user?
 def update_milling_stages_ui(
@@ -228,6 +209,7 @@ def ask_user(
     parent_ui.WAITING_FOR_USER_INTERACTION = True
     logging.info("WAITING_FOR_USER_INTERACTION...")
     while parent_ui.WAITING_FOR_USER_INTERACTION:
+        _check_for_abort(parent_ui=parent_ui)
         time.sleep(1)
 
     INFO = {
@@ -264,6 +246,7 @@ def update_alignment_area_ui(alignment_area: FibsemRectangle, parent_ui: AutoLam
     parent_ui.WAITING_FOR_USER_INTERACTION = True
     logging.info("WAITING_FOR_USER_INTERACTION...")
     while parent_ui.WAITING_FOR_USER_INTERACTION:
+        _check_for_abort(parent_ui)
         time.sleep(1)
 
     _check_for_abort(parent_ui)

@@ -842,13 +842,13 @@ class AutoLamellaUI(AutoLamellaMainUI.Ui_MainWindow, QtWidgets.QMainWindow):
             try: 
                 from fibsem.microscopes.odemis_microscope import OdemisMicroscope
                 if isinstance(self.microscope, OdemisMicroscope):
-                    print("OdemisMicroscope detected, enabling Odemis specific features.")
+                    logging.info("OdemisMicroscope detected, enabling Odemis specific features.")
                     self.actionAdd_Lamella_from_Odemis.setVisible(True)
                     self.actionRun_Spot_Burn_Workflow.setVisible(True)
                 else:
-                    print("OdemisMicroscope not detected, disabling Odemis specific features.")
+                    logging.debug("OdemisMicroscope not detected, disabling Odemis specific features.")
             except Exception as e:
-                logging.info(f"OdemisMicroscope not available: {e}")
+                logging.debug(f"OdemisMicroscope not available: {e}")
 
             self.IS_MICROSCOPE_UI_LOADED = True
             self.milling_widget.milling_position_changed.connect(
